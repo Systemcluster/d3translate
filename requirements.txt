@@ -1,0 +1,4 @@
+fsb5>=1.0
+comtypes>=1.1.7
+paco>=0.2.3
+google-cloud-translate>=1.3.3
