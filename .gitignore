@@ -1,0 +1,4 @@
+# working environment
+.vscode
+.mypy_cache
+
