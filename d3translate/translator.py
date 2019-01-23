@@ -12,6 +12,7 @@ from . import data
 
 TRANSLATE_CLIENT = translate.Client()
 
+
 class Translator:
     '''Google chain Translator'''
 
@@ -29,7 +30,7 @@ class Translator:
         self.string: str = source
         self.used: List = [sourcelang]
         self.lastlang: str = ''
-        self.lang: str = sourcelang
+        self.lang = sourcelang
         self.next = [
             # {'language': 'ja', 'name': 'Japanese'},
             None,

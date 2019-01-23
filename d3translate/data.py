@@ -50,10 +50,10 @@ translate_steps = 5
 # !ADJUST depending on installed voices
 voicefilter = ['english', 'ivona']
 voices = [
-    {   'name': 'DEFAULT', 'voice': 'brian',
+    {   'name': 'DEFAULT', 'voice': 'acapellabox',
         'lower': 0, 'upper': 0,},
 
-    {   'name': 'somebosses', 'voice': 'geraint', 'rate': -2,
+    {   'name': 'somebosses', 'voice': 'acapellabox',
         'lower': 500, 'upper': 706,},
     {   'name': 'intro', 'voice': 'russel',
         'lower': 1000000, 'upper': 1000602,},
@@ -82,7 +82,7 @@ voices = [
     {   'name': 'thiefdude', 'voice': 'geraint',
         'lower': 12000000, 'upper': 12100000,},
     {   'name': 'sorcerer', 'voice': 'eric',
-        'lower': 13000100, 'upper': 13100100,},
+        'lower': 13000000, 'upper': 13100100,},
     {   'name': 'cornyx', 'voice': 'joey',
         'lower': 14000000, 'upper': 14100000,},
     {   'name': 'karla', 'voice': 'emma',
@@ -106,7 +106,7 @@ voices = [
     {   'name': 'emma', 'voice': 'gwyneth',
         'lower': 2450, 'upper': 2453,},
 
-    {   'name': 'gael', 'voice': 'russel', 'rate': -2,
+    {   'name': 'gael', 'voice': 'acapellabox', 'rate': -2,
         'lower': 51000000, 'upper': 51100000,},
     {   'name': 'vilhelm', 'voice': 'brian',
         'lower': 52000000, 'upper': 52100000,},
@@ -121,13 +121,13 @@ voices = [
     {   'name': 'drowsy', 'voice': 'geraint',
         'lower': 59000000, 'upper': 59100000,},
 
-    {   'name': 'gael', 'voice': 'russel', 'rate': -2,
+    {   'name': 'gael', 'voice': 'acapellabox', 'rate': -2,
         'lower': 71000000, 'upper': 71100000,},
     {   'name': 'paintingwoman', 'voice': 'gwyneth',
         'lower': 72000000, 'upper': 72100000,},
     {   'name': 'lapp', 'voice': 'geraint',
         'lower': 73000000, 'upper': 73100000,},
-    {   'name': 'shira', 'voice': 'nicole',
+    {   'name': 'shira', 'voice': 'ivy', 'rate': -5,
         'lower': 74000000, 'upper': 74100000,},
     {   'name': 'locust', 'voice': 'brian',
         'lower': 75000000, 'upper': 75100000,},

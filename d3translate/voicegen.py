@@ -6,6 +6,7 @@ import os
 import random
 import shutil
 import subprocess
+import time
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
@@ -46,6 +47,15 @@ def _speak(wavpath, voice_, voiceconfig, text):
     speak.Speak(text)
     filestream.close()
 
+async def _speak_acapellabox(mp3path, text):
+    '''standalone acapelladownloader to file'''
+    return await (await asyncio.create_subprocess_exec(
+        str(data.basepath.joinpath('tools/acapelladownloader/AcapellaDownloader.exe').resolve()),
+        '-v', 'WillFromAfar', '-t', text, '-p', str(mp3path.resolve()),
+        cwd=str(data.buildpath.resolve()),
+        stdout=subprocess.DEVNULL
+    )).wait()
+
 
 @dataclass
 class VoiceEntry:
@@ -58,10 +68,17 @@ class VoiceEntry:
 class Voicegen:
     '''Audio generator for Voicelines'''
 
-    def __init__(self):
+    def __init__(self, mode: str = 'spvoice'):
         self.voicelines: Dict[int, VoiceEntry] = {}
         self.voicecache = {}
         self.executor: ProcessPoolExecutor = ProcessPoolExecutor()
+        self.mode = mode
+        if self.mode == 'spvoice':
+            self.limit = 6
+        elif self.mode == 'acapellabox':
+            self.limit = 1
+        else:
+            raise Exception('wrong voicegen mode')
 
         print('collecting voicelines from', data.buildpath)
         allentries: List[VoiceEntry] = []
@@ -97,15 +114,31 @@ class Voicegen:
         print()
 
 
+    @staticmethod
+    def mapvoiceid(voiceid: int):
+        '''Map unusual voiceids to their subtitle ids'''
+        if voiceid >= 51100000 and voiceid < 51200000:
+            return voiceid - 100000
+        if voiceid == 90000000:
+            return 17001704
+        if voiceid == 531000000:
+            return 50000000
+        if voiceid == 531001202:
+            return 50000100
+        return voiceid
+
     def getvoiceline(self, voiceid: int):
         '''Get a specific voice line'''
-        if voiceid in self.voicelines:
-            return self.voicelines[voiceid]
+        voiceid_ = self.mapvoiceid(voiceid)
+        if voiceid_ in self.voicelines:
+            return self.voicelines[voiceid_]
         return None
 
     async def genallvoicelines(self, samplenames):
         '''Generate all voice lines for given samples, multiprocessed'''
-        await paco.map(self.__genvoicelineasync, samplenames, limit=24)
+        samplenames_ = samplenames
+        random.shuffle(samplenames_)
+        await paco.map(self.__genvoicelineasync, samplenames_, limit=self.limit)
         print()
 
 
@@ -165,7 +198,6 @@ class Voicegen:
             return -2
 
         # check if text for voiceline exists
-        voiceconfig = self.__getvoice(voiceid)
         voiceline = self.getvoiceline(voiceid)
         if not voiceline:
             if wavpath.is_file():
@@ -175,16 +207,29 @@ class Voicegen:
                 return -1
             print('x', sep='', end='', flush=True)
             return -2
-
-        # speak voiceline to file
         text = voiceline.text
-        voice = voiceconfig['voice']
-        await asyncio.gather(asyncio.get_running_loop().run_in_executor(
-            self.executor, _speak, wavpath, voice, voiceconfig, text))
 
-        # convert audio
-        await self.__convertaudio(wavpath, mp3path)
-        wavpath.unlink()
+        voiceconfig = self.__getvoice(voiceid)
+        voice = voiceconfig['voice']
+        if self.mode == 'acapellabox' or voiceconfig['voice'] == 'acapellabox':
+            result = 1
+            while result != 0:
+                result = await _speak_acapellabox(mp3path, text)
+                if result != 0:
+                    print('\nsample generation failed, trying again... (' + \
+                    str(result) + ')')
+                    await asyncio.sleep(random.randint(1, 5))
+        elif self.mode == 'spvoice':
+            # speak voiceline to file
+            await asyncio.gather(asyncio.get_running_loop().run_in_executor(
+                self.executor, _speak, wavpath, voice, voiceconfig, text))
+            # convert audio
+            await self.__convertaudio(wavpath, mp3path)
+            wavpath.unlink()
+        else:
+            raise Exception('wrong voicegen mode')
+
+
         print('.', sep='', end='', flush=True)
         return 0
 
