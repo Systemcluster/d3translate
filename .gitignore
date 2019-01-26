@@ -5,6 +5,8 @@ build/
 output/
 *.fsb
 *.dcx
+*.fmg
+# *.xml
 
 # Private credentials / keys
 *.credentials.json

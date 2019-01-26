@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import time
+import re
 from pathlib import Path
 
 import fsb5
@@ -16,7 +17,7 @@ import paco
 from . import data
 
 
-print('d3translate 0.1')
+print('d3translate 0.1.1')
 print()
 
 if not data.credentialspath.is_file():
@@ -44,9 +45,11 @@ print()
 data.buildpath.mkdir(exist_ok=True)
 for path in data.buildpath.iterdir():
     if path.is_dir():
-        shutil.rmtree(path, ignore_errors=False)
+        # shutil.rmtree(path, ignore_errors=False)
+        pass
     else:
         path.unlink()
+        pass
 data.outputpath.mkdir(exist_ok=True)
 
 
@@ -117,10 +120,16 @@ asyncio.run(decrypt_all(), debug=False)
 
 
 # rebuild fsbs
-def regenerate_fsb(inputpath: Path, voicegen: Voicegen):
+async def regenerate_fsb(inputpath: Path, voicegen: Voicegen):
     print('reading', inputpath)
     build_successes_ = []
     build_failures_ = []
+
+    # for file in data.buildpath.glob('*'):
+    #     if not file.is_dir() \
+    #     and not file.name.startswith('fdp_') \
+    #     and not file.name.endswith('fsb'):
+    #         file.unlink()
 
     with open(str(inputpath), 'rb') as f:
         fsb = fsb5.FSB5(f.read())
@@ -135,13 +144,17 @@ def regenerate_fsb(inputpath: Path, voicegen: Voicegen):
             lst.write("%s\n" % sample)
 
     # extract existing audio
-    print('extracting samples')
+    print('extracting samples from', name)
     subprocess.check_call([
-        str(data.basepath.joinpath('tools/fmodextr/fmod_extr.exe').resolve()), str(file.resolve())
-    ], cwd=str(data.buildpath.resolve()), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        str(data.basepath.joinpath('tools/fmodextr/fmod_extr.exe').resolve()),
+        str(inputpath.resolve())
+        ],
+        cwd=str(data.buildpath.resolve()),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL)
 
-    print('generating', len(samplenames), 'voicelines')
-    asyncio.run(voicegen.genallvoicelines(samplenames), debug=False)
+    print('generating', len(samplenames), 'voicelines for', name)
+    await voicegen.genallvoicelines(samplenames, name)
 
     print('generating', fsbpath.relative_to(data.outputpath).name)
     result = subprocess.call([
@@ -151,23 +164,32 @@ def regenerate_fsb(inputpath: Path, voicegen: Voicegen):
         str(lstpath)
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if result != 0:
-        print('failed building soundbank:', lstpath)
+        print('failed building soundbank:', fsbpath)
         build_failures_ += [fsbpath]
     else:
-        print('sucessfully built soundbank:', lstpath)
+        print('sucessfully built soundbank:', fsbpath)
         build_successes_ += [fsbpath]
 
     # shutil.rmtree(data.buildpath, ignore_errors=True)
     print()
     return build_failures_, build_successes_
 
-voice_generator = Voicegen()
+
 build_successes = []
 build_failures = []
-for file in data.buildpath.glob('*_crypt.fsb'):
-    fails, succs = regenerate_fsb(file, voice_generator)
-    build_failures += fails
-    build_successes += succs
+async def regenerate_all_fsbs():
+    _build_successes = []
+    _build_failures = []
+    voice_generator = Voicegen()
+    lock = asyncio.Lock()
+    for file in data.buildpath.glob('*_crypt.fsb'):
+        async with lock:
+            fails, succs = await regenerate_fsb(file, voice_generator)
+            _build_failures += fails
+            _build_successes += succs
+    return _build_successes, _build_failures
+
+build_successes, build_failures = asyncio.run(regenerate_all_fsbs())
 
 
 # finish up
