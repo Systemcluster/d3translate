@@ -1,4 +1,6 @@
 # working environment
 .vscode
+.venv
+# temporary files
 .mypy_cache
-
+__pycache__
